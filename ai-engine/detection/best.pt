@@ -1,0 +1,3 @@
+# Placeholder YOLO model (train with train_yolo.py or download pretrained)
+print("Use: yolo task=detect mode=train data=coco.yaml model=yolov8n.pt epochs=100")
+

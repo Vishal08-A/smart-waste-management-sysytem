@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Smart Waste Digital Twin 3D</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background: #0a0a0a; }
+        #info { position: absolute; top: 10px; left: 10px; color: white; font-family: Arial; }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <h2>Digital Twin Simulation</h2>
+        <p id="fillInfo">Fill Level: 50%</p>
+    </div>
+
+<script>
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+// Lighting
+const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+scene.add(ambientLight);
+const pointLight = new THREE.PointLight(0xffffff, 1);
+pointLight.position.set(10, 10, 10);
+scene.add(pointLight);
+
+// Bin geometry (cylinder for trash bin)
+const geometry = new THREE.CylinderGeometry(1, 1.2, 3, 32);
+let fillLevel = 50;
+
+function getColor(level) {
+    if (level < 50) return 0x00ff88; // Green
+    if (level < 80) return 0xffee00; // Yellow
+    return 0xff4444; // Red
+}
+
+const material = new THREE.MeshPhongMaterial({ color: getColor(fillLevel) });
+const bin = new THREE.Mesh(geometry, material);
+bin.position.y = -0.5;
+scene.add(bin);
+
+// Multiple bins grid
+const bins = [];
+for (let i = 0; i < 6; i++) {
+    const binClone = bin.clone();
+    binClone.position.x = (i % 3 - 1) * 3;
+    binClone.position.z = Math.floor(i / 3) * -3;
+    bins.push(binClone);
+    scene.add(binClone);
+}
+
+camera.position.set(0, 5, 10);
+camera.lookAt(0, 0, 0);
+
+// Mouse controls (orbit)
+let mouseX = 0, mouseY = 0;
+document.addEventListener('mousemove', (event) => {
+    mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+    mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+});
+
+function animate() {
+    requestAnimationFrame(animate);
+    
+    // Rotate bins
+    bins.forEach((b, i) => {
+        b.rotation.y += 0.005 + i * 0.001;
+    });
+    
+    // Camera orbit
+    camera.position.x = Math.sin(Date.now() * 0.0002) * 12;
+    camera.position.z = Math.cos(Date.now() * 0.0002) * 12;
+    camera.lookAt(0, 0, 0);
+    
+    renderer.render(scene, camera);
+}
+animate();
+
+// Live data simulation (connect to backend later)
+let globalFill = 50;
+setInterval(() => {
+    globalFill += (Math.random() - 0.5) * 4;
+    globalFill = Math.max(0, Math.min(100, globalFill));
+    
+    bins.forEach((bin, i) => {
+        const level = globalFill + (i - 2.5) * 5;
+        bin.material.color.set(getColor(level));
+        bin.scale.y = 1 + (level / 100) * 0.5; // Visual fill effect
+    });
+    
+    document.getElementById('fillInfo').textContent = `Avg Fill Level: ${globalFill.toFixed(0)}%`;
+}, 2000);
+
+// Resize handler
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// API Integration Placeholder
+async function fetchLiveData() {
+    try {
+        const response = await fetch('http://localhost:5000/api/waste');
+        const bins = await response.json();
+        // Update 3D scene from real data
+        console.log('Live data:', bins);
+    } catch (e) {
+        console.log('Backend not running, using simulation');
+    }
+}
+
+setInterval(fetchLiveData, 5000);
+</script>
+</body>
+</html>
+

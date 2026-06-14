@@ -1,0 +1,8 @@
+torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+ultralytics
+pandas
+numpy
+scikit-learn
+opencv-python
+matplotlib
+
